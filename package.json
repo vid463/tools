@@ -36,10 +36,9 @@
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerLanguages": [
-        "zh_CN",
         "en_US"
       ],
-      "language": "2052",
+      "language": "1033",
       "deleteAppDataOnUninstall": false
     }
   },
