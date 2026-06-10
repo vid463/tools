@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tools</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0f1117;
+        color: #e8eaed;
+      }
+
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: #12151c;
+        border-right: 1px solid #2d3139;
+        padding: 20px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .sidebar-title {
+        padding: 0 10px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #80868b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .nav-item {
+        width: 100%;
+        padding: 12px 14px;
+        border: none;
+        border-radius: 10px;
+        background: transparent;
+        color: #c9d1d9;
+        font-size: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .nav-item:hover {
+        background: #1a1d24;
+      }
+
+      .nav-item.active {
+        background: #1e293b;
+        color: #8ab4f8;
+        font-weight: 600;
+      }
+
+      .content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel {
+        display: none;
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+      }
+
+      .panel.active {
+        display: flex;
+      }
+
+      .agent-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px 16px;
+        gap: 16px;
+      }
+
+      .title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #9aa0a6;
+        letter-spacing: 0.02em;
+      }
+
+      .command-box {
+        width: min(720px, 100%);
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      #commandInput {
+        flex: 1;
+        min-height: 48px;
+        padding: 12px 16px;
+        border: 1px solid #3c4043;
+        border-radius: 12px;
+        background: #1a1d24;
+        color: #e8eaed;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+
+      #commandInput:focus {
+        border-color: #8ab4f8;
+        box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.15);
+      }
+
+      #commandInput::placeholder {
+        color: #80868b;
+      }
+
+      #runBtn {
+        min-width: 88px;
+        padding: 0 20px;
+        border: none;
+        border-radius: 12px;
+        background: #8ab4f8;
+        color: #0f1117;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+
+      #runBtn:hover:not(:disabled) {
+        opacity: 0.9;
+      }
+
+      #runBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .hint {
+        font-size: 12px;
+        color: #80868b;
+      }
+
+      .output-panel {
+        height: 240px;
+        border-top: 1px solid #2d3139;
+        background: #12151c;
+        padding: 16px 20px;
+        overflow: auto;
+      }
+
+      #output {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: Consolas, 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #c9d1d9;
+      }
+
+      #output.empty {
+        color: #80868b;
+      }
+
+      #output.error {
+        color: #f28b82;
+      }
+
+      #jqlFrame {
+        flex: 1;
+        width: 100%;
+        border: none;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-title">工具</div>
+      <button class="nav-item active" type="button" data-panel="agent">Agent 命令</button>
+      <button class="nav-item" type="button" data-panel="jql">jira单搜索</button>
+    </aside>
+
+    <main class="content">
+      <section id="panel-agent" class="panel active">
+        <div class="agent-main">
+          <div class="title">Agent 命令</div>
+          <div class="command-box">
+            <input
+              id="commandInput"
+              type="text"
+              placeholder="输入 agent 命令，例如：列出当前目录文件"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="runBtn" type="button">执行</button>
+          </div>
+          <div class="hint">按 Enter 执行 · 调用本机 Cursor Agent CLI</div>
+        </div>
+        <div class="output-panel">
+          <pre id="output" class="empty">执行结果将显示在这里...</pre>
+        </div>
+      </section>
+
+      <section id="panel-jql" class="panel">
+        <iframe id="jqlFrame" src="jira-jql-builder.html" title="JQL 模板构建器"></iframe>
+      </section>
+    </main>
+
+    <script>
+      const navItems = document.querySelectorAll('.nav-item');
+      const panels = document.querySelectorAll('.panel');
+      const input = document.getElementById('commandInput');
+      const runBtn = document.getElementById('runBtn');
+      const output = document.getElementById('output');
+
+      function switchPanel(panelId) {
+        navItems.forEach((item) => {
+          item.classList.toggle('active', item.dataset.panel === panelId);
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle('active', panel.id === `panel-${panelId}`);
+        });
+        if (panelId === 'agent') {
+          input.focus();
+        }
+      }
+
+      navItems.forEach((item) => {
+        item.addEventListener('click', () => switchPanel(item.dataset.panel));
+      });
+
+      async function runCommand() {
+        const command = input.value.trim();
+        if (!command) return;
+
+        runBtn.disabled = true;
+        output.className = '';
+        output.textContent = '执行中，请稍候...';
+
+        try {
+          const result = await window.agentApi.run(command);
+          output.textContent = result.output;
+          output.className = result.ok ? '' : 'error';
+        } catch (error) {
+          output.textContent = `执行失败：${error.message}`;
+          output.className = 'error';
+        } finally {
+          runBtn.disabled = false;
+          input.focus();
+        }
+      }
+
+      runBtn.addEventListener('click', runCommand);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          runCommand();
+        }
+      });
+
+      window.addEventListener('message', async (event) => {
+        if (event.data?.type !== 'open-external' || !event.data.url) return;
+        try {
+          await window.agentApi.openExternal(event.data.url);
+        } catch (error) {
+          console.error('打开外部链接失败', error);
+        }
+      });
+
+      input.focus();
+    </script>
+  </body>
+</html>

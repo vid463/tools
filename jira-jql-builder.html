@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JQL 模板构建器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* 参考火山引擎官网：浅底、白卡片、品牌蓝 */
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-muted: #f2f4f8;
+      --line: #dde2ea;
+      --line-subtle: #e8ecf2;
+      --text: #1d2129;
+      --text-secondary: #4e5969;
+      --text-muted: #86909c;
+      --accent: #1664ff;
+      --accent-hover: #1253d9;
+      --accent-soft: #eaf2ff;
+      --topbar-start: #051447;
+      --topbar-mid: #0a2463;
+      --topbar-end: #082454;
+      --success: #00b42a;
+      --success-soft: #e8ffea;
+      --warn-bg: #fff7e8;
+      --warn-border: #ff9a2e;
+      --warn-text: #7a4510;
+      --info-bg: #e8f4ff;
+      --info-border: #91caff;
+      --info-text: #0e3b7a;
+      --radius: 8px;
+      --radius-lg: 16px;
+      --font: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+      --shadow: 0 2px 8px rgba(6, 20, 60, 0.06);
+      --shadow-lg: 0 8px 32px rgba(6, 20, 60, 0.1);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    html {
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .hint.hint--pop { animation: none; }
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 0;
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .ve-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(105deg, var(--topbar-start) 0%, var(--topbar-mid) 42%, var(--topbar-end) 100%);
+      color: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    }
+    .ve-topbar-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 10px clamp(16px, 4vw, 32px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+    }
+    .ve-topbar__brand {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .ve-topbar__tag {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.88);
+    }
+    .wrap {
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px clamp(16px, 3vw, 28px) 40px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .page-intro {
+      margin: 0 0 14px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+    .page-intro code {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--line-subtle);
+      background: var(--surface-muted);
+      color: var(--text-secondary);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .panel {
+      padding: 24px 26px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line-subtle);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    }
+    .panel--build { padding: 22px 24px; }
+    .panel--out { position: static; align-self: stretch; }
+    .panel--out.panel--ready {
+      border-color: rgba(22, 100, 255, 0.35);
+      box-shadow: var(--shadow), 0 0 0 1px rgba(22, 100, 255, 0.08);
+    }
+    .panel--build .divider { margin: 20px 0; }
+    .panel--build .section-title { margin: 0 0 14px; }
+    .panel--build .lead-muted {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+    .panel--build textarea { min-height: 88px; }
+    .panel--build .order-row {
+      padding: 10px 14px;
+      margin-top: 0;
+      background: var(--surface-muted);
+      border: 1px solid var(--line-subtle);
+    }
+    .panel--build .btn-row { margin-top: 10px; }
+    .panel--build .parsed-section { margin-top: 12px; }
+    .panel--build .empty-hint { margin-top: 10px; padding: 14px; }
+    /* minmax(0,1fr) 防止长文本撑破列宽导致与相邻栏重叠 */
+    .build-split { display: grid; gap: 24px; }
+    @media (min-width: 960px) {
+      .build-split {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0 28px;
+        align-items: start;
+      }
+      .build-split__col:first-child {
+        padding-right: 28px;
+        border-right: 1px solid var(--line-subtle);
+      }
+    }
+    .build-split__col {
+      min-width: 0;
+      isolation: isolate;
+    }
+    .build-split .section-title {
+      margin: 0 0 12px;
+      padding: 6px 0 10px 12px;
+      font-size: 15px;
+      background: transparent;
+    }
+    .parsed-section { margin-top: 14px; min-width: 0; }
+    .build-split .presets { grid-template-columns: 1fr; }
+    @media (min-width: 400px) {
+      .build-split .presets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .to-output {
+      margin: 20px 0 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--line-subtle);
+      text-align: center;
+    }
+    .to-output a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .to-output a:hover { border-bottom-color: var(--accent); }
+    #output { scroll-margin-top: 64px; }
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin: 0 0 18px;
+      padding: 0 0 12px 14px;
+      border-bottom: none;
+      border-left: 4px solid var(--accent);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--surface-muted) 0%, transparent 100%);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+    .section-title-text { flex: 1 1 auto; min-width: 0; }
+    .section-meta {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(22, 100, 255, 0.22);
+      background: var(--accent-soft);
+      white-space: nowrap;
+    }
+    .section-meta.section-meta--ok {
+      color: var(--success);
+      border-color: rgba(0, 180, 42, 0.35);
+      background: var(--success-soft);
+    }
+    .section-block + .section-block { margin-top: 20px; }
+    label.field {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .field-gap { margin-top: 14px; }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 18px;
+      align-items: end;
+    }
+    @media (max-width: 560px) { .field-grid { grid-template-columns: 1fr; } }
+    .field-span-2 { grid-column: 1 / -1; }
+    .field-grid .field { margin-bottom: 4px; }
+    .order-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-radius: var(--radius);
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234e5969'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+      padding-right: 36px;
+    }
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+    input:hover, select:hover, textarea:hover { border-color: #94a3b8; }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(22, 100, 255, 0.18);
+    }
+    .hint-inline {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .hint-inline code { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
+    .row-label { font-size: 14px; color: var(--text); font-weight: 500; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .btn-row .primary, .btn-row .secondary {
+      flex: 0 1 auto;
+      min-width: min(100%, 120px);
+    }
+    @media (max-width: 400px) {
+      .btn-row .primary, .btn-row .secondary { flex: 1 1 100%; }
+    }
+    .row--tight { margin-top: 0; }
+    .lead-muted {
+      margin: 0 0 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .lead-muted code {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line-subtle);
+      background: var(--surface-muted);
+      color: var(--text);
+    }
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 520px) { .presets { grid-template-columns: 1fr; } }
+    .check.chip-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-subtle);
+      background: var(--surface-muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .check.chip-check:hover { border-color: var(--line); background: #fff; }
+    .check.chip-check:has(input:checked), .check.chip-check.is-checked {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: none;
+    }
+    .check.chip-check span {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .check.chip-check input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+    .divider {
+      height: 0;
+      margin: 0;
+      border: 0;
+      border-top: 1px solid var(--line-subtle);
+    }
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      border: 1px solid #94a3b8;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .toggle.on {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      transition: transform 0.2s var(--ease);
+    }
+    .toggle.on::after { transform: translateX(20px); }
+    .toggle:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(22, 100, 255, 0.28);
+    }
+    .callout {
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .callout strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: inherit;
+      opacity: 0.9;
+    }
+    .callout.warn {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-text);
+    }
+    .callout.info {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border);
+      color: var(--info-text);
+    }
+    .out-panel {
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-lg);
+      background: var(--surface-muted);
+      overflow: hidden;
+    }
+    .out-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line-subtle);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: #fff;
+    }
+    .out-body { padding: 16px; background: #fff; }
+    .hint {
+      font-size: 12px;
+      color: var(--accent);
+      min-height: 18px;
+      font-family: var(--mono);
+      transition: opacity 0.2s, transform 0.25s var(--ease);
+    }
+    .hint.hint--pop { animation: hintPop 0.45s var(--ease); }
+    @keyframes hintPop {
+      0% { opacity: 0.5; transform: translateY(4px); }
+      40% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .out-actions { display: flex; flex-direction: column; gap: 12px; }
+    .out-actions .btn-row { margin-top: 0; }
+    .out-actions .jira-open { width: 100%; margin-top: 0; justify-content: center; }
+    button.primary {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: var(--accent);
+      transition: background 0.15s, transform 0.1s;
+    }
+    button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    button.primary:active:not(:disabled) { transform: scale(0.98); }
+    button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.secondary {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    button.secondary:hover:not(:disabled) {
+      border-color: var(--text-muted);
+      background: var(--surface-muted);
+    }
+    button.secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+    button:focus-visible, a.jira-open:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(22, 100, 255, 0.28);
+    }
+    a.jira-open {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 0;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      border-radius: var(--radius);
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    a.jira-open::after { content: "→"; font-size: 14px; opacity: 0.9; }
+    a.jira-open:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+    a.jira-open[href="#"] {
+      opacity: 0.4;
+      pointer-events: none;
+      background: #cbd5e1;
+      border-color: #cbd5e1;
+    }
+    .parsed-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+      color: var(--text-muted);
+    }
+    .empty-hint {
+      margin-top: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      border-radius: var(--radius);
+      border: 1px dashed var(--line);
+      background: var(--surface-muted);
+    }
+    .empty-hint kbd {
+      display: inline-block;
+      margin: 0 2px;
+      padding: 2px 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      border: 1px solid var(--line-subtle);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+    .toast {
+      position: fixed;
+      z-index: 50;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(8px);
+      max-width: min(92vw, 380px);
+      padding: 12px 18px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text);
+      text-align: center;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    }
+    .toast.toast--show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .callout.info { margin-top: 16px; }
+    strong { color: var(--text); font-weight: 600; }
+    .comment-filter-block {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line-subtle);
+    }
+    .comment-filter-block .order-row { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <header class="ve-topbar" role="banner">
+    <div class="ve-topbar-inner">
+      <span class="ve-topbar__brand">JQL 模板构建器</span>
+      <span class="ve-topbar__tag">本地工具 · 无服务端</span>
+    </div>
+  </header>
+  <div class="wrap">
+    <h1 class="sr-only">JQL 模板构建器</h1>
+    <p class="page-intro">
+      数据仅存本机 <code>localStorage</code>（<code>jira-jql-builder-v1</code>）；支持 URL 查询参数预填；链接与 JQL 在<strong>页面下方</strong>生成。
+    </p>
+
+    <div class="grid">
+      <section class="panel panel--build" id="build">
+        <h2 class="section-title">
+          <span class="section-title-text">条件构建</span>
+        </h2>
+        <div class="section-block">
+          <div class="field-grid">
+            <div class="field-span-2">
+              <label class="field" for="project">项目 project</label>
+              <input type="text" id="project" autocomplete="off" />
+            </div>
+            <div>
+              <label class="field" for="dateField">时间字段</label>
+              <select id="dateField">
+                <option value="created">created（创建时间）</option>
+                <option value="updated">updated（更新时间）</option>
+              </select>
+            </div>
+            <div>
+              <label class="field" for="dateFrom">起始日期（含当天）</label>
+              <input type="text" id="dateFrom" placeholder="YYYY-MM-DD" autocomplete="off" />
+            </div>
+            <div class="field-span-2">
+              <label class="field" for="jiraOrigin">Jira 站点根地址</label>
+              <input type="text" id="jiraOrigin" autocomplete="off" />
+            </div>
+            <div class="order-row">
+              <span class="row-label">追加 ORDER BY created DESC</span>
+              <button type="button" class="toggle on" id="orderBy" aria-pressed="true" aria-label="追加 ORDER BY created DESC" title="点击切换"></button>
+            </div>
+            <div class="field-span-2 comment-filter-block">
+              <div class="order-row">
+                <span class="row-label">评论关键字过滤（JQL 追加 <code>comment ~</code>）</span>
+                <button type="button" class="toggle" id="commentFilterToggle" aria-pressed="false" aria-label="将评论关键字写入 JQL" title="点击切换"></button>
+              </div>
+              <label class="field" for="commentFilterPhrase">评论须包含的子串</label>
+              <input type="text" id="commentFilterPhrase" autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="build-split">
+          <div class="build-split__col">
+            <h2 class="section-title">
+              <span class="section-title-text">关键字（OR）</span>
+              <span class="section-meta" id="parsedMeta" hidden></span>
+            </h2>
+            <div class="section-block">
+              <p class="lead-muted">粘贴包名或关键字后点「解析为选项」，在下方勾选参与搜索的项。在输入框内可用 <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 快速解析。</p>
+
+              <label class="field" for="pasteRaw">粘贴包名或关键字</label>
+              <textarea id="pasteRaw" placeholder="每行一个，或用逗号 / 分号分隔，例如：&#10;com.xxx.xxx&#10;com.xxx.xxx"></textarea>
+              <div class="btn-row">
+                <button type="button" class="primary" id="parseBtn">解析为下方选项</button>
+                <button type="button" class="secondary" id="clearParsedBtn">清空已解析列表</button>
+              </div>
+              <div class="parsed-section" id="parsedWrap">
+                <h3 id="parsedHeading" hidden>从粘贴解析（可勾选）</h3>
+                <div class="presets" id="parsedInner"></div>
+                <div id="parsedEmpty" class="empty-hint">
+                  暂无解析项。粘贴关键字后点「解析」或按 <kbd>Ctrl</kbd> + <kbd>Enter</kbd>。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="build-split__col">
+            <h2 class="section-title">
+              <span class="section-title-text">剔除单号</span>
+              <span class="section-meta" id="excludeMeta" hidden></span>
+            </h2>
+            <div class="section-block">
+              <p class="lead-muted">
+                粘贴 Jira 单号（如 <code>X1103AEE-603</code>），点解析后在下方勾选要从结果中<strong>排除</strong>的单号；生成的 JQL 会追加
+                <code>AND key not in ("...", "...")</code>。支持从整段文字中自动识别单号。
+              </p>
+              <label class="field" for="excludePasteRaw">粘贴单号或含单号的文本</label>
+              <textarea id="excludePasteRaw"></textarea>
+              <div class="btn-row">
+                <button type="button" class="primary" id="parseExcludeBtn">解析为下方选项</button>
+                <button type="button" class="secondary" id="clearExcludeBtn">清空剔除列表</button>
+              </div>
+              <div class="parsed-section" id="excludeWrap">
+                <h3 id="excludeHeading" hidden>将剔除的单号（勾选表示排除）</h3>
+                <div class="presets" id="excludeInner"></div>
+                <div id="excludeEmpty" class="empty-hint">
+                  暂无剔除项。粘贴含单号的文本后解析，或按 <kbd>Ctrl</kbd> + <kbd>Enter</kbd>。
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="to-output"><a href="#output">跳转至生成结果 ↓</a></p>
+      </section>
+
+      <section class="panel panel--out" id="output" aria-labelledby="output-heading">
+        <h2 class="section-title" id="output-heading">
+          <span class="section-title-text">生成结果</span>
+          <span class="section-meta" id="outputMeta">待完善</span>
+        </h2>
+        <div id="incomplete" class="callout warn" hidden>
+          <strong>尚不完整</strong>
+          请填写项目、日期，并解析至少一条关键字，且至少勾选一项参与搜索。
+        </div>
+        <div id="complete" hidden>
+          <div class="out-panel">
+            <div class="out-head">
+              <span>操作</span>
+              <span class="hint" id="copyHint" aria-live="polite"></span>
+            </div>
+            <div class="out-body">
+              <div class="out-actions">
+                <div class="btn-row row--tight">
+                  <button type="button" class="primary" id="copyBtn">复制 JQL</button>
+                  <button type="button" class="secondary" id="copyUrlBtn">复制搜索链接</button>
+                  <button type="button" class="secondary" id="exportSecondPassBtn">导出二次筛选配置（JSON）</button>
+                </div>
+                <a id="openJiraLink" class="jira-open" href="#" target="_blank" rel="noopener noreferrer">在 Jira 中打开搜索结果</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="callout info">
+          <strong>使用方式</strong>
+          点击主按钮在浏览器中打开 Jira；或复制链接 / JQL。也可由 Cursor 生成带查询参数的本地文件 URL 预填表单（见上方一行说明）。
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+(function () {
+  var STORAGE_KEY = "jira-jql-builder-v1";
+
+  var lastJql = "";
+
+  function escapeJqlString(s) {
+    return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  function parseTokens(raw) {
+    return String(raw || "")
+      .split(/[\n\r,，;；]+/)
+      .map(function (t) { return t.trim(); })
+      .filter(Boolean);
+  }
+
+  /** Jira issue key: project key (letters + digits/underscore) + hyphen + digits */
+  var ISSUE_KEY_RE = /\b[A-Za-z][A-Za-z0-9_]*-\d+\b/g;
+
+  function parseIssueKeysFromText(raw) {
+    var s = String(raw || "");
+    ISSUE_KEY_RE.lastIndex = 0;
+    var found = s.match(ISSUE_KEY_RE);
+    if (!found || !found.length) return [];
+    var seen = {};
+    var out = [];
+    found.forEach(function (k) {
+      var u = k.toUpperCase();
+      if (!seen[u]) {
+        seen[u] = true;
+        out.push(u);
+      }
+    });
+    return out;
+  }
+
+  function buildKeywordList(state) {
+    var parsed = state.parsedPackages || [];
+    var sel = state.parsedSel || {};
+    return parsed.filter(function (id) { return sel[id] !== false; });
+  }
+
+  function buildExcludedKeyList(state) {
+    var keys = state.excludedKeys || [];
+    var sel = state.excludeSel || {};
+    return keys.filter(function (k) { return sel[k] !== false; });
+  }
+
+  /**
+   * @param {object} state
+   * @param {{ omitCommentClause?: boolean }} [opts] omitCommentClause 为 true 时不追加 comment ~（供本机二次筛选脚本：先按初筛 JQL 拉单，再按评论时间 + commentNeedle 过滤）
+   */
+  function buildJql(state, opts) {
+    opts = opts || {};
+    var proj = (state.project || "").trim();
+    var date = (state.dateFrom || "").trim();
+    var keywords = buildKeywordList(state);
+    if (!proj || !date || keywords.length === 0) return "";
+    var lines = keywords.map(function (k) { return '  text ~ "' + escapeJqlString(k) + '"'; });
+    var orBlock = "AND (\n" + lines.join(" OR\n") + "\n)";
+    var excluded = buildExcludedKeyList(state);
+    var excludeClause = "";
+    if (excluded.length > 0) {
+      excludeClause =
+        "\nAND key not in (" +
+        excluded.map(function (k) { return '"' + escapeJqlString(k) + '"'; }).join(", ") +
+        ")";
+    }
+    var commentClause = "";
+    if (!opts.omitCommentClause && state.commentFilterEnabled) {
+      var phrase = String(state.commentFilterPhrase || "").trim();
+      if (phrase) {
+        commentClause = '\nAND comment ~ "' + escapeJqlString(phrase) + '"';
+      }
+    }
+    var tail = state.orderBy ? "\nORDER BY created DESC" : "";
+    return 'project = "' + escapeJqlString(proj) + '" AND ' + state.dateField + ' >= "' + escapeJqlString(date) + '"\n' + orBlock + excludeClause + commentClause + tail;
+  }
+
+  function normalizeJiraOrigin(raw) {
+    var s = String(raw || "").trim().replace(/\/+$/, "");
+    if (!s) return "";
+    return s;
+  }
+
+  function buildIssuesSearchUrl(jql, jiraOrigin) {
+    return normalizeJiraOrigin(jiraOrigin) + "/issues/?jql=" + encodeURIComponent(jql);
+  }
+
+  /** 供本机脚本 / Cursor：初筛 JQL（无 comment~）+ 页面上当前完整 JQL + 评论子串与时间下界 */
+  function getSecondPassExportText() {
+    var full = buildJql(state);
+    if (!full) return null;
+    var base = buildJql(state, { omitCommentClause: true });
+    var needle = String(state.commentFilterPhrase || "").trim();
+    var pack = {
+      schema: "jira-jql-builder-second-pass-v1",
+      jiraOrigin: normalizeJiraOrigin(state.jiraOrigin),
+      jqlIssueSearch: base,
+      jqlAsInPage: full,
+      commentNeedle: needle,
+      commentTimeFrom: String(state.dateFrom || "").trim(),
+      commentTimeTo: null,
+      issueDateField: state.dateField,
+      generatedAt: new Date().toISOString(),
+      notes:
+        "jqlIssueSearch 不含 comment~，便于脚本先按初筛分页拉 issue，再拉评论并按 commentTimeFrom/commentTimeTo 与 commentNeedle 精筛；jqlAsInPage 为当前页生成的完整 JQL（含可选 comment~）。"
+    };
+    return JSON.stringify(pack, null, 2);
+  }
+
+  var el = {
+    project: document.getElementById("project"),
+    dateField: document.getElementById("dateField"),
+    dateFrom: document.getElementById("dateFrom"),
+    jiraOrigin: document.getElementById("jiraOrigin"),
+    orderBy: document.getElementById("orderBy"),
+    pasteRaw: document.getElementById("pasteRaw"),
+    parseBtn: document.getElementById("parseBtn"),
+    clearParsedBtn: document.getElementById("clearParsedBtn"),
+    parsedWrap: document.getElementById("parsedWrap"),
+    parsedHeading: document.getElementById("parsedHeading"),
+    parsedInner: document.getElementById("parsedInner"),
+    parsedEmpty: document.getElementById("parsedEmpty"),
+    parsedMeta: document.getElementById("parsedMeta"),
+    incomplete: document.getElementById("incomplete"),
+    complete: document.getElementById("complete"),
+    copyBtn: document.getElementById("copyBtn"),
+    copyUrlBtn: document.getElementById("copyUrlBtn"),
+    exportSecondPassBtn: document.getElementById("exportSecondPassBtn"),
+    openJiraLink: document.getElementById("openJiraLink"),
+    copyHint: document.getElementById("copyHint"),
+    excludePasteRaw: document.getElementById("excludePasteRaw"),
+    parseExcludeBtn: document.getElementById("parseExcludeBtn"),
+    clearExcludeBtn: document.getElementById("clearExcludeBtn"),
+    excludeWrap: document.getElementById("excludeWrap"),
+    excludeHeading: document.getElementById("excludeHeading"),
+    excludeInner: document.getElementById("excludeInner"),
+    excludeEmpty: document.getElementById("excludeEmpty"),
+    excludeMeta: document.getElementById("excludeMeta"),
+    panelOut: document.getElementById("output"),
+    outputMeta: document.getElementById("outputMeta"),
+    toast: document.getElementById("toast"),
+    commentFilterToggle: document.getElementById("commentFilterToggle"),
+    commentFilterPhrase: document.getElementById("commentFilterPhrase")
+  };
+
+  var toastTimer = 0;
+
+  function showToast(msg) {
+    el.toast.textContent = msg;
+    el.toast.removeAttribute("hidden");
+    el.toast.classList.add("toast--show");
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () {
+      el.toast.classList.remove("toast--show");
+      el.toast.setAttribute("hidden", "");
+    }, 2800);
+  }
+
+  function flashCopyHint(msg) {
+    el.copyHint.textContent = msg;
+    el.copyHint.classList.remove("hint--pop");
+    void el.copyHint.offsetWidth;
+    el.copyHint.classList.add("hint--pop");
+    window.setTimeout(function () {
+      el.copyHint.textContent = "";
+      el.copyHint.classList.remove("hint--pop");
+    }, 2200);
+  }
+
+  function updateSectionMetas() {
+    var pkgs = state.parsedPackages || [];
+    var ps = state.parsedSel || {};
+    var nSel = pkgs.filter(function (id) { return ps[id] !== false; }).length;
+    if (pkgs.length) {
+      el.parsedMeta.hidden = false;
+      el.parsedMeta.textContent = "已选 " + nSel + " / " + pkgs.length;
+    } else {
+      el.parsedMeta.hidden = true;
+    }
+    var keys = state.excludedKeys || [];
+    var es = state.excludeSel || {};
+    var eSel = keys.filter(function (k) { return es[k] !== false; }).length;
+    if (keys.length) {
+      el.excludeMeta.hidden = false;
+      el.excludeMeta.textContent = "排除 " + eSel + " / " + keys.length;
+    } else {
+      el.excludeMeta.hidden = true;
+    }
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return null;
+  }
+  function saveState(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function defaultState() {
+    return {
+      project: "",
+      dateField: "created",
+      dateFrom: "2026-05-08",
+      jiraOrigin: "",
+      orderBy: true,
+      pasteRaw: "",
+      parsedPackages: [],
+      parsedSel: {},
+      excludePasteRaw: "",
+      excludedKeys: [],
+      excludeSel: {},
+      commentFilterEnabled: false,
+      commentFilterPhrase: ""
+    };
+  }
+
+  var state = loadState() || defaultState();
+  delete state.presetSel;
+  if (state.jiraOrigin == null || state.jiraOrigin === "") state.jiraOrigin = defaultState().jiraOrigin;
+  if (!Array.isArray(state.parsedPackages)) state.parsedPackages = [];
+  if (!state.parsedSel || typeof state.parsedSel !== "object") state.parsedSel = {};
+  if (state.pasteRaw == null) state.pasteRaw = "";
+  if (state.customKw && !state.pasteRaw) state.pasteRaw = state.customKw;
+  if (!Array.isArray(state.excludedKeys)) state.excludedKeys = [];
+  if (!state.excludeSel || typeof state.excludeSel !== "object") state.excludeSel = {};
+  if (state.excludePasteRaw == null) state.excludePasteRaw = "";
+  if (typeof state.commentFilterEnabled !== "boolean") state.commentFilterEnabled = false;
+  if (state.commentFilterPhrase == null) state.commentFilterPhrase = "";
+
+  function mergeParsedTokens(tokens) {
+    var list = state.parsedPackages.slice();
+    var sel = Object.assign({}, state.parsedSel);
+    tokens.forEach(function (t) {
+      if (list.indexOf(t) === -1) {
+        list.push(t);
+        sel[t] = true;
+      }
+    });
+    state.parsedPackages = list;
+    state.parsedSel = sel;
+  }
+
+  function mergeExcludeKeys(keys) {
+    var list = state.excludedKeys.slice();
+    var sel = Object.assign({}, state.excludeSel);
+    keys.forEach(function (k) {
+      var key = String(k).trim().toUpperCase();
+      if (!key || !/^[A-Z][A-Z0-9_]*-\d+$/.test(key)) return;
+      if (list.indexOf(key) === -1) {
+        list.push(key);
+        sel[key] = true;
+      }
+    });
+    state.excludedKeys = list;
+    state.excludeSel = sel;
+  }
+
+  /**
+   * URL 预填（与 Cursor 对话结合）：?project=&dateField=&dateFrom=&jiraOrigin=&orderBy=
+   * &paste=（整段 URL 编码，会写入粘贴框并解析）| &keywords=（逗号/换行分隔）| 多个 &k=包名
+   * &replace=1 先清空已解析列表再合并。
+   * 剔除单号：&excludePaste= &excludeKeys= &ex= 可重复；&excludeReplace=1 先清空剔除列表。
+   * 评论关键字：&commentFilter=1|true 开启；&commentPhrase= URL 编码子串。
+   */
+  function applyQueryPrefill() {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      if (![...q.keys()].length) return false;
+
+      if (q.get("replace") === "1" || q.get("replace") === "true") {
+        state.parsedPackages = [];
+        state.parsedSel = {};
+      }
+
+      if (q.get("excludeReplace") === "1" || q.get("excludeReplace") === "true") {
+        state.excludedKeys = [];
+        state.excludeSel = {};
+      }
+
+      var proj = q.get("project");
+      if (proj !== null && proj !== "") state.project = proj;
+
+      var df = q.get("dateField");
+      if (df === "created" || df === "updated") state.dateField = df;
+
+      var dfrom = q.get("dateFrom");
+      if (dfrom !== null && dfrom !== "") state.dateFrom = dfrom;
+
+      var jo = q.get("jiraOrigin");
+      if (jo !== null && jo !== "") state.jiraOrigin = jo;
+
+      var ob = q.get("orderBy");
+      if (ob !== null && ob !== "") {
+        var os = String(ob).toLowerCase();
+        if (os === "1" || os === "true" || os === "yes" || os === "on") state.orderBy = true;
+        else if (os === "0" || os === "false" || os === "no" || os === "off") state.orderBy = false;
+      }
+
+      var paste = q.get("paste");
+      if (paste !== null && paste !== "") {
+        try {
+          state.pasteRaw = decodeURIComponent(paste.replace(/\+/g, " "));
+        } catch (e0) {
+          state.pasteRaw = paste;
+        }
+        mergeParsedTokens(parseTokens(state.pasteRaw));
+      }
+
+      var kw = q.get("keywords");
+      if (kw !== null && kw !== "") mergeParsedTokens(parseTokens(kw));
+
+      var ks = q.getAll("k");
+      if (ks.length) mergeParsedTokens(ks.map(function (x) { return String(x).trim(); }).filter(Boolean));
+
+      var exPaste = q.get("excludePaste");
+      if (exPaste !== null && exPaste !== "") {
+        try {
+          state.excludePasteRaw = decodeURIComponent(exPaste.replace(/\+/g, " "));
+        } catch (e2) {
+          state.excludePasteRaw = exPaste;
+        }
+        var ek = parseIssueKeysFromText(state.excludePasteRaw);
+        if (!ek.length) {
+          ek = parseTokens(state.excludePasteRaw)
+            .map(function (t) { return t.trim().toUpperCase(); })
+            .filter(function (t) { return /^[A-Z][A-Z0-9_]*-\d+$/.test(t); });
+        }
+        if (ek.length) mergeExcludeKeys(ek);
+      }
+
+      var exKw = q.get("excludeKeys");
+      if (exKw !== null && exKw !== "") {
+        var ek2 = parseIssueKeysFromText(exKw);
+        if (!ek2.length) {
+          ek2 = parseTokens(exKw)
+            .map(function (t) { return t.trim().toUpperCase(); })
+            .filter(function (t) { return /^[A-Z][A-Z0-9_]*-\d+$/.test(t); });
+        }
+        if (ek2.length) mergeExcludeKeys(ek2);
+      }
+
+      var exs = q.getAll("ex");
+      if (exs.length) mergeExcludeKeys(exs.map(function (x) { return String(x).trim(); }).filter(Boolean));
+
+      var cf = q.get("commentFilter");
+      if (cf !== null && cf !== "") {
+        var cfs = String(cf).toLowerCase();
+        if (cfs === "1" || cfs === "true" || cfs === "yes" || cfs === "on") state.commentFilterEnabled = true;
+        else if (cfs === "0" || cfs === "false" || cfs === "no" || cfs === "off") state.commentFilterEnabled = false;
+      }
+
+      var cph = q.get("commentPhrase");
+      if (cph !== null) {
+        try {
+          state.commentFilterPhrase = decodeURIComponent(cph.replace(/\+/g, " "));
+        } catch (e3) {
+          state.commentFilterPhrase = cph;
+        }
+      }
+
+      return true;
+    } catch (e1) {
+      return false;
+    }
+  }
+
+  applyQueryPrefill();
+
+  function syncParsedChipsDom() {
+    var list = state.parsedPackages || [];
+    var sig = list.join("\u0001");
+    el.parsedHeading.hidden = list.length === 0;
+    if (list.length === 0) {
+      el.parsedInner.removeAttribute("data-sig");
+      el.parsedInner.innerHTML = "";
+      el.parsedEmpty.hidden = false;
+      return;
+    }
+    el.parsedEmpty.hidden = true;
+    if (el.parsedInner.getAttribute("data-sig") === sig) {
+      el.parsedInner.querySelectorAll("input[data-parsed-pkg]").forEach(function (inp) {
+        var on = state.parsedSel[inp.dataset.parsedPkg] !== false;
+        inp.checked = on;
+        var lab = inp.closest(".chip-check");
+        if (lab) lab.classList.toggle("is-checked", on);
+      });
+      return;
+    }
+    el.parsedInner.setAttribute("data-sig", sig);
+    el.parsedInner.innerHTML = "";
+    list.forEach(function (id) {
+      var lab = document.createElement("label");
+      lab.className = "check chip-check";
+      var inp = document.createElement("input");
+      inp.type = "checkbox";
+      inp.dataset.parsedPkg = id;
+      var on = state.parsedSel[id] !== false;
+      inp.checked = on;
+      lab.classList.toggle("is-checked", on);
+      var span = document.createElement("span");
+      span.textContent = id;
+      lab.appendChild(inp);
+      lab.appendChild(span);
+      el.parsedInner.appendChild(lab);
+    });
+  }
+
+  function syncExcludeChipsDom() {
+    var list = state.excludedKeys || [];
+    var sig = list.join("\u0001");
+    el.excludeHeading.hidden = list.length === 0;
+    if (list.length === 0) {
+      el.excludeInner.removeAttribute("data-sig");
+      el.excludeInner.innerHTML = "";
+      el.excludeEmpty.hidden = false;
+      return;
+    }
+    el.excludeEmpty.hidden = true;
+    if (el.excludeInner.getAttribute("data-sig") === sig) {
+      el.excludeInner.querySelectorAll("input[data-exclude-key]").forEach(function (inp) {
+        var on = state.excludeSel[inp.dataset.excludeKey] !== false;
+        inp.checked = on;
+        var lab = inp.closest(".chip-check");
+        if (lab) lab.classList.toggle("is-checked", on);
+      });
+      return;
+    }
+    el.excludeInner.setAttribute("data-sig", sig);
+    el.excludeInner.innerHTML = "";
+    list.forEach(function (key) {
+      var lab = document.createElement("label");
+      lab.className = "check chip-check";
+      var inp = document.createElement("input");
+      inp.type = "checkbox";
+      inp.dataset.excludeKey = key;
+      var on = state.excludeSel[key] !== false;
+      inp.checked = on;
+      lab.classList.toggle("is-checked", on);
+      var span = document.createElement("span");
+      span.textContent = key;
+      lab.appendChild(inp);
+      lab.appendChild(span);
+      el.excludeInner.appendChild(lab);
+    });
+  }
+
+  function syncForm() {
+    el.project.value = state.project;
+    el.dateField.value = state.dateField;
+    el.dateFrom.value = state.dateFrom;
+    el.jiraOrigin.value = state.jiraOrigin;
+    el.orderBy.classList.toggle("on", state.orderBy);
+    el.orderBy.setAttribute("aria-pressed", state.orderBy ? "true" : "false");
+    el.commentFilterToggle.classList.toggle("on", state.commentFilterEnabled);
+    el.commentFilterToggle.setAttribute("aria-pressed", state.commentFilterEnabled ? "true" : "false");
+    el.commentFilterPhrase.value = state.commentFilterPhrase;
+    el.pasteRaw.value = state.pasteRaw;
+    el.excludePasteRaw.value = state.excludePasteRaw;
+    syncParsedChipsDom();
+    syncExcludeChipsDom();
+  }
+
+  function readForm() {
+    state.project = el.project.value;
+    state.dateField = el.dateField.value;
+    state.dateFrom = el.dateFrom.value;
+    state.jiraOrigin = el.jiraOrigin.value;
+    state.orderBy = el.orderBy.classList.contains("on");
+    state.commentFilterEnabled = el.commentFilterToggle.classList.contains("on");
+    state.commentFilterPhrase = el.commentFilterPhrase.value;
+    state.pasteRaw = el.pasteRaw.value;
+    state.excludePasteRaw = el.excludePasteRaw.value;
+    el.parsedInner.querySelectorAll("input[data-parsed-pkg]").forEach(function (inp) {
+      state.parsedSel[inp.dataset.parsedPkg] = inp.checked;
+    });
+    el.excludeInner.querySelectorAll("input[data-exclude-key]").forEach(function (inp) {
+      state.excludeSel[inp.dataset.excludeKey] = inp.checked;
+    });
+  }
+
+  function render() {
+    readForm();
+    lastJql = buildJql(state);
+    saveState(state);
+    syncParsedChipsDom();
+    syncExcludeChipsDom();
+    updateSectionMetas();
+
+    if (!lastJql) {
+      el.incomplete.hidden = false;
+      el.complete.hidden = true;
+      el.copyBtn.disabled = true;
+      el.copyUrlBtn.disabled = true;
+      el.exportSecondPassBtn.disabled = true;
+      el.openJiraLink.setAttribute("href", "#");
+      el.panelOut.classList.remove("panel--ready");
+      el.outputMeta.textContent = "待完善";
+      el.outputMeta.classList.remove("section-meta--ok");
+    } else {
+      el.incomplete.hidden = true;
+      el.complete.hidden = false;
+      el.copyBtn.disabled = false;
+      el.copyUrlBtn.disabled = false;
+      el.exportSecondPassBtn.disabled = false;
+      el.openJiraLink.setAttribute("href", buildIssuesSearchUrl(lastJql, state.jiraOrigin));
+      el.panelOut.classList.add("panel--ready");
+      el.outputMeta.textContent = "JQL 就绪";
+      el.outputMeta.classList.add("section-meta--ok");
+    }
+  }
+
+  el.parsedWrap.addEventListener("change", function (e) {
+    var t = e.target;
+    if (t && t.matches && t.matches("input[data-parsed-pkg]")) {
+      state.parsedSel[t.dataset.parsedPkg] = t.checked;
+      render();
+    }
+  });
+
+  el.excludeWrap.addEventListener("change", function (e) {
+    var t = e.target;
+    if (t && t.matches && t.matches("input[data-exclude-key]")) {
+      state.excludeSel[t.dataset.excludeKey] = t.checked;
+      render();
+    }
+  });
+
+  el.parseBtn.addEventListener("click", function () {
+    readForm();
+    var tokens = parseTokens(el.pasteRaw.value);
+    if (tokens.length === 0) {
+      showToast("请先粘贴或输入至少一个关键字");
+      return;
+    }
+    mergeParsedTokens(tokens);
+    saveState(state);
+    render();
+  });
+
+  el.clearParsedBtn.addEventListener("click", function () {
+    state.parsedPackages = [];
+    state.parsedSel = {};
+    render();
+  });
+
+  el.parseExcludeBtn.addEventListener("click", function () {
+    readForm();
+    var raw = el.excludePasteRaw.value;
+    var keys = parseIssueKeysFromText(raw);
+    if (keys.length === 0) {
+      keys = parseTokens(raw).filter(function (t) {
+        return /^[A-Za-z][A-Za-z0-9_]*-\d+$/.test(t.trim());
+      }).map(function (t) { return t.trim().toUpperCase(); });
+    }
+    if (keys.length === 0) {
+      showToast("未识别到有效 Jira 单号");
+      return;
+    }
+    mergeExcludeKeys(keys);
+    saveState(state);
+    render();
+  });
+
+  el.clearExcludeBtn.addEventListener("click", function () {
+    state.excludedKeys = [];
+    state.excludeSel = {};
+    render();
+  });
+
+  el.project.addEventListener("input", render);
+  el.dateField.addEventListener("change", render);
+  el.dateFrom.addEventListener("input", render);
+  el.jiraOrigin.addEventListener("input", render);
+  el.commentFilterPhrase.addEventListener("input", render);
+  el.pasteRaw.addEventListener("input", function () {
+    state.pasteRaw = el.pasteRaw.value;
+    saveState(state);
+  });
+
+  el.excludePasteRaw.addEventListener("input", function () {
+    state.excludePasteRaw = el.excludePasteRaw.value;
+    saveState(state);
+  });
+
+  function bindParseHotkey(textarea, parseKeywords) {
+    textarea.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      if (parseKeywords) el.parseBtn.click();
+      else el.parseExcludeBtn.click();
+    });
+  }
+  bindParseHotkey(el.pasteRaw, true);
+  bindParseHotkey(el.excludePasteRaw, false);
+
+  el.orderBy.addEventListener("click", function () {
+    state.orderBy = !el.orderBy.classList.contains("on");
+    el.orderBy.classList.toggle("on", state.orderBy);
+    el.orderBy.setAttribute("aria-pressed", state.orderBy ? "true" : "false");
+    render();
+  });
+
+  el.commentFilterToggle.addEventListener("click", function () {
+    state.commentFilterEnabled = !el.commentFilterToggle.classList.contains("on");
+    el.commentFilterToggle.classList.toggle("on", state.commentFilterEnabled);
+    el.commentFilterToggle.setAttribute("aria-pressed", state.commentFilterEnabled ? "true" : "false");
+    render();
+  });
+
+  el.copyBtn.addEventListener("click", function () {
+    if (!lastJql) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastJql).then(function () {
+        flashCopyHint("已复制 JQL");
+      }).catch(function () { fallbackCopy(lastJql, "JQL"); });
+    } else {
+      fallbackCopy(lastJql, "JQL");
+    }
+  });
+
+  el.copyUrlBtn.addEventListener("click", function () {
+    if (!lastJql) return;
+    var url = buildIssuesSearchUrl(lastJql, state.jiraOrigin);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        flashCopyHint("已复制搜索链接");
+      }).catch(function () { fallbackCopy(url, "链接"); });
+    } else {
+      fallbackCopy(url, "链接");
+    }
+  });
+
+  el.exportSecondPassBtn.addEventListener("click", function () {
+    readForm();
+    var text = getSecondPassExportText();
+    if (!text) {
+      showToast("请先完成 JQL 条件");
+      return;
+    }
+    var blob = new Blob([text], { type: "application/json;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    var d = String(state.dateFrom || "").replace(/[^\d-]/g, "").replace(/-/g, "");
+    a.download = "jira-second-pass-" + (d.length >= 8 ? d.slice(0, 8) : "config") + ".json";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("已下载二次筛选 JSON");
+  });
+
+  el.openJiraLink.addEventListener("click", function (ev) {
+    var href = el.openJiraLink.getAttribute("href");
+    if (!href || href === "#") {
+      ev.preventDefault();
+      return;
+    }
+    ev.preventDefault();
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "open-external", url: href }, "*");
+      return;
+    }
+    window.open(href, "_blank", "noopener,noreferrer");
+  });
+
+  function fallbackCopy(text, label) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      flashCopyHint("已复制 " + (label || "内容") + "（兼容模式）");
+    } catch (e) {
+      flashCopyHint("请手动复制（" + (label || "内容") + "）");
+    }
+    document.body.removeChild(ta);
+  }
+
+  syncForm();
+  render();
+})();
+  </script>
+</body>
+</html>
