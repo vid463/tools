@@ -9,13 +9,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "electron-forge package",
     "make": "set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/&& set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/&& electron-forge make",
-    "make:ci": "electron-forge make"
+    "make:ci": "electron-forge make -- --publish never"
   },
   "author": "Developer",
   "license": "ISC",
   "build": {
     "appId": "com.developer.tools",
     "productName": "tools",
+    "publish": null,
     "asar": true,
     "directories": {
       "output": "out/make"
