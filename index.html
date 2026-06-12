@@ -29,6 +29,43 @@
         gap: 8px;
       }
 
+      .sidebar-footer {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid #2d3139;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .app-version {
+        padding: 0 10px;
+        font-size: 12px;
+        color: #80868b;
+      }
+
+      .update-btn {
+        width: 100%;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid #3c4043;
+        border-radius: 8px;
+        background: #1a1d24;
+        color: #c9d1d9;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .update-btn:hover:not(:disabled) {
+        border-color: #8ab4f8;
+        color: #e8eaed;
+      }
+
+      .update-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .sidebar-title {
         padding: 0 10px 12px;
         font-size: 13px;
@@ -80,13 +117,12 @@
       }
 
       .agent-main {
-        flex: 1;
+        flex: 0 0 auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 32px 24px 16px;
-        gap: 16px;
+        padding: 24px 24px 8px;
+        gap: 12px;
       }
 
       .title {
@@ -96,64 +132,219 @@
         letter-spacing: 0.02em;
       }
 
-      .command-box {
+      .excel-action {
         width: min(720px, 100%);
         display: flex;
-        gap: 10px;
-        align-items: stretch;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
       }
 
-      #commandInput {
-        flex: 1;
-        min-height: 48px;
-        padding: 12px 16px;
-        border: 1px solid #3c4043;
-        border-radius: 12px;
-        background: #1a1d24;
-        color: #e8eaed;
-        font-size: 15px;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-      }
-
-      #commandInput:focus {
-        border-color: #8ab4f8;
-        box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.15);
-      }
-
-      #commandInput::placeholder {
-        color: #80868b;
-      }
-
-      #runBtn {
-        min-width: 88px;
-        padding: 0 20px;
+      #fillExcelBtn {
+        min-width: 240px;
+        min-height: 52px;
+        padding: 0 28px;
         border: none;
         border-radius: 12px;
         background: #8ab4f8;
         color: #0f1117;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: opacity 0.15s;
+        transition: opacity 0.15s, transform 0.1s;
       }
 
-      #runBtn:hover:not(:disabled) {
-        opacity: 0.9;
+      #fillExcelBtn:hover:not(:disabled) {
+        opacity: 0.92;
       }
 
-      #runBtn:disabled {
+      #fillExcelBtn:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      #fillExcelBtn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+
+      #cancelBtn {
+        min-width: 100px;
+        min-height: 44px;
+        padding: 0 20px;
+        border: 1px solid #5f6368;
+        border-radius: 12px;
+        background: transparent;
+        color: #e8eaed;
+        font-size: 14px;
+        cursor: pointer;
+        display: none;
+      }
+
+      #cancelBtn.visible {
+        display: inline-block;
+      }
+
+      #cancelBtn:hover {
+        background: #1a1d24;
+      }
+
+      .action-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .file-info {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #2d3139;
+        border-radius: 10px;
+        background: #1a1d24;
+        font-size: 13px;
+        color: #9aa0a6;
+        text-align: center;
+        word-break: break-all;
+      }
+
+      .file-info.has-file {
+        color: #c9d1d9;
+        border-color: #3c4043;
       }
 
       .hint {
         font-size: 12px;
         color: #80868b;
+        text-align: center;
+        line-height: 1.6;
+      }
+
+      .result-actions {
+        width: min(720px, 100%);
+        display: none;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .result-actions.visible {
+        display: flex;
+      }
+
+      .secondary-btn {
+        min-height: 40px;
+        padding: 0 18px;
+        border: 1px solid #5f6368;
+        border-radius: 10px;
+        background: #1a1d24;
+        color: #e8eaed;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .secondary-btn:hover:not(:disabled) {
+        background: #252932;
+        border-color: #8ab4f8;
+      }
+
+      .secondary-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .history-section {
+        width: min(720px, 100%);
+        margin-top: 2px;
+      }
+
+      .history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .history-section:has(.history-body.collapsed) .history-header {
+        margin-bottom: 0;
+      }
+
+      .history-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: #9aa0a6;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .history-toggle:hover {
+        color: #c9d1d9;
+      }
+
+      .history-count {
+        font-size: 12px;
+        color: #80868b;
+      }
+
+      .history-body {
+        display: block;
+      }
+
+      .history-body.collapsed {
+        display: none;
+      }
+
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .history-item {
+        border: 1px solid #2d3139;
+        border-radius: 10px;
+        background: #1a1d24;
+        padding: 12px 14px;
+      }
+
+      .history-meta {
+        font-size: 12px;
+        color: #80868b;
+        margin-bottom: 6px;
+      }
+
+      .history-path {
+        font-size: 12px;
+        color: #c9d1d9;
+        word-break: break-all;
+        line-height: 1.5;
+        margin-bottom: 10px;
+      }
+
+      .history-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .history-empty {
+        font-size: 12px;
+        color: #80868b;
+        text-align: center;
+        padding: 16px;
+        border: 1px dashed #2d3139;
+        border-radius: 10px;
       }
 
       .output-panel {
-        height: 240px;
+        flex: 1;
+        min-height: 180px;
         border-top: 1px solid #2d3139;
         background: #12151c;
         padding: 16px 20px;
@@ -189,25 +380,46 @@
   <body>
     <aside class="sidebar">
       <div class="sidebar-title">工具</div>
-      <button class="nav-item active" type="button" data-panel="agent">Agent 命令</button>
+      <button class="nav-item active" type="button" data-panel="agent">特性表填写</button>
       <button class="nav-item" type="button" data-panel="jql">jira单搜索</button>
+      <div class="sidebar-footer">
+        <div id="appVersion" class="app-version">版本加载中...</div>
+        <button id="checkUpdateBtn" type="button" class="update-btn">检查更新</button>
+      </div>
     </aside>
 
     <main class="content">
       <section id="panel-agent" class="panel active">
         <div class="agent-main">
-          <div class="title">Agent 命令</div>
-          <div class="command-box">
-            <input
-              id="commandInput"
-              type="text"
-              placeholder="输入 agent 命令，例如：列出当前目录文件"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <button id="runBtn" type="button">执行</button>
+          <div class="title">特性表填写</div>
+          <div class="excel-action">
+            <div class="action-row">
+              <button id="fillExcelBtn" type="button">选择特性表并填写</button>
+              <button id="cancelBtn" type="button">取消</button>
+            </div>
+            <div id="fileInfo" class="file-info">尚未选择文件</div>
+            <div id="resultActions" class="result-actions">
+              <button id="openExcelBtn" type="button" class="secondary-btn">打开填写完的表格</button>
+              <button id="openReportBtn" type="button" class="secondary-btn">打开需配置说明文件</button>
+            </div>
           </div>
-          <div class="hint">按 Enter 执行 · 调用本机 Cursor Agent CLI</div>
+          <div class="hint">
+            填表前会检查 adb 设备连接；输出 <code style="color:#8ab4f8">*_filled.xlsx</code> 与 <code style="color:#8ab4f8">validation_results.txt</code>
+          </div>
+          <div class="history-section">
+            <div class="history-header">
+              <button id="historyToggle" type="button" class="history-toggle" aria-expanded="false">
+                <span id="historyToggleIcon">▶</span>
+                <span>历史记录</span>
+              </button>
+              <span id="historyCount" class="history-count"></span>
+            </div>
+            <div id="historyBody" class="history-body collapsed">
+              <div id="historyList" class="history-list">
+                <div class="history-empty">暂无填写记录</div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="output-panel">
           <pre id="output" class="empty">执行结果将显示在这里...</pre>
@@ -222,9 +434,51 @@
     <script>
       const navItems = document.querySelectorAll('.nav-item');
       const panels = document.querySelectorAll('.panel');
-      const input = document.getElementById('commandInput');
-      const runBtn = document.getElementById('runBtn');
+      const fillExcelBtn = document.getElementById('fillExcelBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      const fileInfo = document.getElementById('fileInfo');
       const output = document.getElementById('output');
+      const resultActions = document.getElementById('resultActions');
+      const openExcelBtn = document.getElementById('openExcelBtn');
+      const openReportBtn = document.getElementById('openReportBtn');
+      const historyList = document.getElementById('historyList');
+      const historyBody = document.getElementById('historyBody');
+      const historyToggle = document.getElementById('historyToggle');
+      const historyToggleIcon = document.getElementById('historyToggleIcon');
+      const historyCount = document.getElementById('historyCount');
+      let historyExpanded = false;
+
+      let statusText = '';
+      let streamText = '';
+      let removeProgressListener = null;
+      let lastOutputPath = null;
+      let lastReportPath = null;
+
+      function renderOutput() {
+        output.textContent = statusText + streamText;
+        output.scrollTop = output.scrollHeight;
+      }
+
+      function startProgressListener() {
+        if (removeProgressListener) removeProgressListener();
+        removeProgressListener = window.agentApi.onProgress((data) => {
+          if (data.message != null) {
+            statusText = data.message;
+            streamText = '';
+          }
+          if (data.partial) {
+            streamText += data.partial;
+          }
+          renderOutput();
+        });
+      }
+
+      function stopProgressListener() {
+        if (removeProgressListener) {
+          removeProgressListener();
+          removeProgressListener = null;
+        }
+      }
 
       function switchPanel(panelId) {
         navItems.forEach((item) => {
@@ -233,43 +487,203 @@
         panels.forEach((panel) => {
           panel.classList.toggle('active', panel.id === `panel-${panelId}`);
         });
-        if (panelId === 'agent') {
-          input.focus();
-        }
       }
 
       navItems.forEach((item) => {
         item.addEventListener('click', () => switchPanel(item.dataset.panel));
       });
 
-      async function runCommand() {
-        const command = input.value.trim();
-        if (!command) return;
+      function setFileInfo(filePath) {
+        if (!filePath) {
+          fileInfo.textContent = '尚未选择文件';
+          fileInfo.classList.remove('has-file');
+          return;
+        }
+        fileInfo.textContent = filePath;
+        fileInfo.classList.add('has-file');
+      }
 
-        runBtn.disabled = true;
-        output.className = '';
-        output.textContent = '执行中，请稍候...';
-
+      function formatTime(iso) {
         try {
-          const result = await window.agentApi.run(command);
-          output.textContent = result.output;
-          output.className = result.ok ? '' : 'error';
-        } catch (error) {
-          output.textContent = `执行失败：${error.message}`;
-          output.className = 'error';
-        } finally {
-          runBtn.disabled = false;
-          input.focus();
+          return new Date(iso).toLocaleString('zh-CN', { hour12: false });
+        } catch {
+          return iso || '';
         }
       }
 
-      runBtn.addEventListener('click', runCommand);
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          runCommand();
+      function showResultActions(outputPath, reportPath) {
+        lastOutputPath = outputPath || null;
+        lastReportPath = reportPath || null;
+        if (!lastOutputPath) {
+          resultActions.classList.remove('visible');
+          return;
+        }
+        resultActions.classList.add('visible');
+        openReportBtn.disabled = !lastReportPath;
+      }
+
+      async function openFile(filePath, label) {
+        if (!filePath) return;
+        const result = await window.agentApi.openPath(filePath);
+        if (!result.ok) {
+          statusText += `\n打开${label}失败：${result.error}`;
+          renderOutput();
+          output.className = 'error';
+        }
+      }
+
+      function setHistoryExpanded(expanded) {
+        historyExpanded = expanded;
+        historyBody.classList.toggle('collapsed', !expanded);
+        historyToggleIcon.textContent = expanded ? '▼' : '▶';
+        historyToggle.setAttribute('aria-expanded', String(expanded));
+      }
+
+      function updateHistoryCount(count) {
+        historyCount.textContent = count > 0 ? `${count} 条` : '';
+      }
+
+      function renderHistory(history) {
+        const list = history || [];
+        updateHistoryCount(list.length);
+
+        if (!list.length) {
+          historyList.innerHTML = '<div class="history-empty">暂无填写记录</div>';
+          return;
+        }
+
+        historyList.innerHTML = '';
+        for (const item of list) {
+          const el = document.createElement('div');
+          el.className = 'history-item';
+          el.innerHTML = `
+            <div class="history-meta">${formatTime(item.time)}</div>
+            <div class="history-path">源文件：${item.filePath || '-'}</div>
+            <div class="history-path">输出表格：${item.outputPath || '-'}</div>
+            <div class="history-path">配置说明：${item.reportPath || '无配置说明文件'}</div>
+            <div class="history-actions">
+              <button type="button" class="secondary-btn" data-action="excel">打开表格</button>
+              <button type="button" class="secondary-btn" data-action="report" ${item.reportPath ? '' : 'disabled'}>打开说明文件</button>
+            </div>
+          `;
+
+          el.querySelector('[data-action="excel"]').addEventListener('click', () => {
+            openFile(item.outputPath, '表格');
+          });
+          el.querySelector('[data-action="report"]').addEventListener('click', () => {
+            openFile(item.reportPath, '说明文件');
+          });
+          historyList.appendChild(el);
+        }
+      }
+
+      async function loadHistory() {
+        try {
+          const history = await window.agentApi.getFillHistory();
+          renderHistory(history);
+        } catch (error) {
+          historyList.innerHTML = `<div class="history-empty">加载历史失败：${error.message}</div>`;
+        }
+      }
+
+      async function fillExcel() {
+        fillExcelBtn.disabled = true;
+        cancelBtn.classList.add('visible');
+        resultActions.classList.remove('visible');
+        output.className = '';
+        statusText = '等待选择文件...';
+        streamText = '';
+        renderOutput();
+        startProgressListener();
+
+        try {
+          const result = await window.agentApi.fillExcel();
+
+          if (result.outputPath) {
+            setFileInfo(`源文件：${result.filePath}\n输出：${result.outputPath}`);
+          } else if (result.filePath) {
+            setFileInfo(result.filePath);
+          }
+
+          if (!result.filePath && result.output === '未选择文件。') {
+            statusText = result.output;
+            streamText = '';
+            renderOutput();
+            output.className = 'empty';
+            return;
+          }
+
+          if (result.filePath && result.output) {
+            statusText = `文件：${result.filePath}\n\n`;
+            streamText = result.output;
+          } else {
+            statusText = result.output || '';
+            streamText = '';
+          }
+          renderOutput();
+          output.className = result.ok ? '' : 'error';
+
+          if (result.ok && result.outputPath) {
+            showResultActions(result.outputPath, result.reportPath);
+          }
+          if (result.history) {
+            renderHistory(result.history);
+          } else if (result.ok) {
+            await loadHistory();
+          }
+        } catch (error) {
+          statusText = `执行失败：${error.message}`;
+          streamText = '';
+          renderOutput();
+          output.className = 'error';
+        } finally {
+          stopProgressListener();
+          fillExcelBtn.disabled = false;
+          cancelBtn.classList.remove('visible');
+        }
+      }
+
+      fillExcelBtn.addEventListener('click', fillExcel);
+      openExcelBtn.addEventListener('click', () => openFile(lastOutputPath, '表格'));
+      openReportBtn.addEventListener('click', () => openFile(lastReportPath, '说明文件'));
+      cancelBtn.addEventListener('click', async () => {
+        await window.agentApi.cancel();
+        statusText += '\n[已请求取消]';
+        renderOutput();
+      });
+
+      historyToggle.addEventListener('click', () => {
+        setHistoryExpanded(!historyExpanded);
+      });
+
+      loadHistory();
+
+      const appVersion = document.getElementById('appVersion');
+      const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+
+      async function loadAppVersion() {
+        try {
+          const version = await window.agentApi.getAppVersion();
+          appVersion.textContent = `v${version}`;
+        } catch {
+          appVersion.textContent = '版本未知';
+        }
+      }
+
+      checkUpdateBtn.addEventListener('click', async () => {
+        checkUpdateBtn.disabled = true;
+        checkUpdateBtn.textContent = '检查中...';
+        try {
+          await window.agentApi.checkUpdate();
+        } catch (error) {
+          alert(`检查更新失败：${error.message}`);
+        } finally {
+          checkUpdateBtn.disabled = false;
+          checkUpdateBtn.textContent = '检查更新';
         }
       });
+
+      loadAppVersion();
 
       window.addEventListener('message', async (event) => {
         if (event.data?.type !== 'open-external' || !event.data.url) return;
@@ -280,7 +694,6 @@
         }
       });
 
-      input.focus();
     </script>
   </body>
 </html>

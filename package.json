@@ -1,18 +1,23 @@
 {
   "name": "tools",
   "productName": "tools",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple Electron Hello World application",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "fill-excel": "node fill-android-excel.js",
     "package": "electron-forge package",
     "make": "set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/&& set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/&& electron-forge make",
     "make:ci": "electron-forge make -- --publish never"
   },
   "author": "Developer",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vid463/tools.git"
+  },
   "build": {
     "appId": "com.developer.tools",
     "productName": "tools",
@@ -53,5 +58,9 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "electron": "^35.0.0"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "xlsx": "^0.18.5"
   }
 }

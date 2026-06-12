@@ -1,0 +1,36 @@
+Android 特性验证摘要 (待执行脚本生成精确结果)
+========================================
+Excel 文件: 未找到原始文件；运行脚本后将保存至 C:\Users\weikang.yang\Desktop\ai\result.xlsx
+数据来源: 临时 JSON 重建 + as.txt + path.txt
+
+执行命令:
+  cd D:\project\Electron\tools
+  npm run fill-excel
+
+总验证项数: 385 (345 支持 + 40 不支持)
+
+预检阻塞项:
+- 在 Desktop / Downloads / Documents / D:\project (depth 6) 未找到含表头「特性名称」的 .xlsx/.xls/.xlsm
+- 将从 C:\Users\weikang.yang\AppData\Local\Temp\tools-excel-fill-1781096383855.json 重建 Excel
+
+已知 fail 模式 (基于 as.txt 与表格对照):
+- 户外增强 (ro.tr_outdoorboost.feature.support=0, 期望支持): 9 项
+- 查找/远程 (ro.tr_palm_find.feature.support=0, 期望支持): 8 项
+- Circle to Search 属性缺失 (ro.tr_microIntelligence.circle_to_search.feature.support): 5 项
+- Pad 兼容模式 (ro.tr_displaycompatible.compatiblemode_pad.support=1, 期望不支持): 4 项
+- 平行视窗 (ro.os_activityembedding_support=1, 期望不支持): 1 项
+- 分屏/小窗多项属性缺失或值与期望不符 (save/threepointmenu/topbottom/pad 等)
+- PC 互联部分项 (network_sharing=0、pc_mouse_button=0、phone_mirror_pc=0 等, 期望支持)
+- 显示/护眼多项属性缺失 (colormode/xdr/smartmediaengine 等)
+
+已知 pass 模式:
+- SmartPanel 核心属性 (os_smartpanel.support=1) + com.transsion.smartpanel 已安装
+- 儿童模式下架项 (ro.tr_childmode.feature.support=0, 期望不支持)
+- 多数小窗/分屏属性 (ro.tr_multiwindow.*=1, ro.tr_splitscreen.customized=1 等, 期望支持)
+- PC 互联/极速互传/IoT 主要 ro.tr_* 属性与包名
+
+NA 模式:
+- 无支持/不支持对照值的属性 (如 ro.tr_multiwindow.version=51): 约 14 项
+- 无效属性名「想·想·」及无属性无包名的 UI 项
+
+精确 pass/fail/NA 计数请运行 fill-android-excel.js 后查看本文件更新版本。
